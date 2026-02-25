@@ -1,0 +1,68 @@
+# Замени bot.example.com и n8n.example.com на свои домены
+
+# ── Telegram Bot + Webhooks ────────────────────────────────
+bot.example.com {
+    encode gzip zstd
+
+    # Заголовки безопасности
+    header {
+        X-Content-Type-Options "nosniff"
+        X-Frame-Options "DENY"
+        X-XSS-Protection "1; mode=block"
+        Referrer-Policy "no-referrer"
+        -Server
+    }
+
+    # Webhook Telegram
+    handle /webhook {
+        reverse_proxy vpsbot:8080 {
+            header_up Host {host}
+            header_up X-Real-IP {remote_host}
+            header_up X-Forwarded-Proto {scheme}
+        }
+    }
+
+    # Webhook CryptoBot
+    handle /cryptobot-webhook {
+        reverse_proxy vpsbot:8080 {
+            header_up Host {host}
+            header_up X-Real-IP {remote_host}
+        }
+    }
+
+    # Webhook YooKassa
+    handle /yukassa-webhook {
+        reverse_proxy vpsbot:8080 {
+            header_up Host {host}
+            header_up X-Real-IP {remote_host}
+        }
+    }
+
+    # Health check (публичный)
+    handle /health {
+        reverse_proxy vpsbot:8080
+    }
+
+    # Остальные запросы — 404
+    handle {
+        respond 404
+    }
+}
+
+# ── n8n Automation Panel ───────────────────────────────────
+n8n.example.com {
+    encode gzip zstd
+
+    # Защита заголовками
+    header {
+        X-Content-Type-Options "nosniff"
+        X-Frame-Options "SAMEORIGIN"
+        -Server
+    }
+
+    reverse_proxy vpsbot_n8n:5678 {
+        header_up Host {host}
+        header_up X-Real-IP {remote_host}
+        header_up X-Forwarded-Proto {scheme}
+    }
+}
